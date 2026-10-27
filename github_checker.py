@@ -26,7 +26,12 @@ def make_headers():
 
 
 def check_rate_limit(response):
-    """Stop with a clear message if GitHub says we've hit the rate limit."""
+    """Stop with a clear message for token problems or rate limits."""
+    if response.status_code == 401:
+        raise RuntimeError(
+            "GitHub rejected the token (401). Your GITHUB_TOKEN in .env is "
+            "wrong or revoked. Fix it, or leave it empty to run without one."
+        )
     if response.status_code in (403, 429) and "rate limit" in response.text.lower():
         raise RuntimeError(
             "GitHub rate limit reached. Check that GITHUB_TOKEN is set "
@@ -80,22 +85,66 @@ def get_commit_facts(full_name, username):
     # Each commit date looks like "2024-03-15T10:22:01Z"; keep just "2024-03-15"
     dates = [c["commit"]["author"]["date"][:10] for c in commits]
 
+    # Also fetch ALL commits (anyone's) to see who else worked on the repo
+    all_commits = get_json(
+        f"{API}/repos/{full_name}/commits",
+        params={"per_page": 100},
+    ) or []
+
+    other_authors = []
+    for c in all_commits:
+        # "author" is the GitHub account; it's None if the commit email isn't
+        # linked to any account, so fall back to the name saved in git
+        if c["author"]:
+            who = c["author"]["login"]
+        else:
+            who = c["commit"]["author"]["name"] + " (no GitHub account)"
+        if who.lower() != username.lower() and who not in other_authors:
+            other_authors.append(who)
+
     return {
         "commit_count": len(commits),
         "active_days": len(set(dates)),  # set() removes duplicate dates
         "first_commit": min(dates) if dates else None,
         "last_commit": max(dates) if dates else None,
+        "total_commits": len(all_commits),
+        "other_authors": other_authors,
     }
 
 
+# Folders full of downloaded/generated code that the candidate didn't write
+SKIP_FOLDERS = {"node_modules", "venv", ".venv", "env", "site-packages",
+                "vendor", "dist", "build", "__pycache__", ".next"}
+
+DEP_FILES = ("package.json", "requirements.txt")
+
+
 def get_deps(full_name, branch):
-    """Read package.json and requirements.txt from the default branch."""
-    package_json = get_text(f"{RAW}/{full_name}/{branch}/package.json")
-    requirements = get_text(f"{RAW}/{full_name}/{branch}/requirements.txt")
+    """Find every package.json / requirements.txt in the repo and read them."""
+    # The Trees API lists every file path in the repo in one call.
+    # Empty repos return 409, so we get None and find no files.
+    tree = get_json(
+        f"{API}/repos/{full_name}/git/trees/{branch}",
+        params={"recursive": 1},
+    ) or {}
+
+    dep_paths = []
+    for item in tree.get("tree", []):
+        parts = item["path"].split("/")  # "frontend/package.json" -> ["frontend", "package.json"]
+        if item["type"] != "blob" or parts[-1] not in DEP_FILES:
+            continue
+        if any(folder in SKIP_FOLDERS for folder in parts[:-1]):
+            continue
+        dep_paths.append(item["path"])
+
+    # Download each file and glue the contents together
+    contents = [get_text(f"{RAW}/{full_name}/{branch}/{path}") for path in dep_paths]
+
     return {
-        "has_package_json": package_json != "",
-        "has_requirements": requirements != "",
-        "deps": (package_json + "\n" + requirements).strip().lower(),
+        "dep_files": dep_paths,
+        "has_package_json": any(p.endswith("package.json") for p in dep_paths),
+        "has_requirements": any(p.endswith("requirements.txt") for p in dep_paths),
+        "deps": "\n".join(contents).strip().lower(),
     }
 
 
