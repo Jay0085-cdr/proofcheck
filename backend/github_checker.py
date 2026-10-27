@@ -16,6 +16,15 @@ API = "https://api.github.com"
 RAW = "https://raw.githubusercontent.com"
 
 
+# Our own error types, so api.py can turn each one into the right status code
+class UserNotFoundError(Exception):
+    pass
+
+
+class RateLimitError(Exception):
+    pass
+
+
 def make_headers():
     """Add the token if we have one (5000 requests/hour instead of 60)."""
     headers = {"Accept": "application/vnd.github+json"}
@@ -33,7 +42,7 @@ def check_rate_limit(response):
             "wrong or revoked. Fix it, or leave it empty to run without one."
         )
     if response.status_code in (403, 429) and "rate limit" in response.text.lower():
-        raise RuntimeError(
+        raise RateLimitError(
             "GitHub rate limit reached. Check that GITHUB_TOKEN is set "
             "correctly in your .env file, or wait an hour and try again."
         )
@@ -152,7 +161,7 @@ def check_user(username):
     """Return one dict of facts for each public repo of `username`."""
     # Make sure the user exists first
     if get_json(f"{API}/users/{username}") is None:
-        raise ValueError(f"GitHub user not found: {username}")
+        raise UserNotFoundError(f"GitHub user not found: {username}")
 
     results = []
     for repo in get_all_repos(username):

@@ -11,3 +11,12 @@ __pycache__/
 
 # Mac system files
 .DS_Store
+
+# Frontend
+node_modules/
+dist/
+frontend/.env
+
+# Resumes are personal data - don't commit them
+*.pdf
+*.docx

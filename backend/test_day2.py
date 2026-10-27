@@ -3,7 +3,7 @@ test_day2.py
 Quick manual test for Day 1 + Day 2.
 
 Usage:
-    python test_day2.py path/to/resume.pdf
+    python test_day2.py path/to/resume.pdf_or_docx
 """
 
 import json
@@ -15,7 +15,7 @@ from resume_parser import extract_text
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python test_day2.py path/to/resume.pdf")
+        print("Usage: python test_day2.py path/to/resume.pdf_or_docx")
         sys.exit(1)
 
     pdf_path = sys.argv[1]
@@ -30,7 +30,7 @@ def main():
     # Step 2: text -> claims JSON
     print()
     print("=" * 60)
-    print("CLAIMS (from Claude)")
+    print("CLAIMS")
     print("=" * 60)
     claims = extract_claims(text)
     print(json.dumps(claims, indent=2))

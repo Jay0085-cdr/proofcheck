@@ -56,18 +56,23 @@ def similarity(a, b):
     return difflib.SequenceMatcher(None, normalize(a), normalize(b)).ratio()
 
 
+def short_name(project_name):
+    """'Ghost Kitchen — Payment System' -> 'Ghost Kitchen'."""
+    return re.split(r" [—–-] |:|\||\(", project_name)[0].strip()
+
+
 def find_repo(project_name, repos):
     """Return the repo whose name is most similar to the project name,
     or None if nothing is at least 60% similar."""
-    # "Ghost Kitchen — Payment System" -> also try just "Ghost Kitchen",
-    # because a long subtitle makes the full name look very different
-    short_name = re.split(r" [—–-] |:|\||\(", project_name)[0]
+    # Also try the short name, because a long subtitle
+    # makes the full name look very different from the repo name
+    short = short_name(project_name)
 
     best_repo = None
     best_score = 0.0
     for repo in repos:
         score = max(similarity(project_name, repo["name"]),
-                    similarity(short_name, repo["name"]))
+                    similarity(short, repo["name"]))
         if score > best_score:
             best_repo, best_score = repo, score
     return best_repo if best_score >= 0.6 else None
@@ -83,26 +88,29 @@ def tech_found(tech, repo):
 
 
 def red_flags(repo):
-    """List of warnings about a repo. Empty list = nothing suspicious."""
+    """List of warnings about a repo. Empty list = nothing suspicious.
+    Each flag has a "type" (for code to check) and "text" (for people to read)."""
     flags = []
     mine = repo["commit_count"]
     total = repo["total_commits"]
 
     if repo["fork"]:
-        flags.append("Repo is a fork (a copy of someone else's project)")
+        flags.append({"type": "fork", "text": "Repo is a fork (a copy of someone else's project)"})
 
     if mine == 0:
-        flags.append("No commits by the candidate")
+        flags.append({"type": "few_commits", "text": "No commits by the candidate"})
     elif mine < 5:
-        flags.append(f"Only {mine} commit(s) by the candidate")
+        flags.append({"type": "few_commits", "text": f"Only {mine} commit(s) by the candidate"})
 
     if mine > 0 and repo["active_days"] == 1:
-        flags.append(f"All candidate commits were made on one day ({repo['first_commit']})")
+        flags.append({"type": "one_day",
+                      "text": f"All candidate commits were made on one day ({repo['first_commit']})"})
 
     others = total - mine
     if total > 0 and others > mine:
         names = ", ".join(repo["other_authors"]) or "unknown"
-        flags.append(f"Most commits ({others} of {total}) were made by other accounts: {names}")
+        flags.append({"type": "other_authors",
+                      "text": f"Most commits ({others} of {total}) were made by other accounts: {names}"})
 
     return flags
 
@@ -118,6 +126,7 @@ def check_project(project, repos):
             "repo": None,
             "tech": {},
             "flags": [],
+            "other_authors": [],
             "claims": project.get("claims", []),
         }
 
@@ -136,6 +145,7 @@ def check_project(project, repos):
         "repo": repo["name"],
         "tech": tech,
         "flags": flags,
+        "other_authors": repo["other_authors"],
         "claims": project.get("claims", []),
     }
 
