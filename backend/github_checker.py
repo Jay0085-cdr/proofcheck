@@ -5,6 +5,7 @@ languages, how many commits they made, when, and their dependency files.
 """
 
 import os
+import re
 
 import requests
 from dotenv import load_dotenv
@@ -23,6 +24,18 @@ class UserNotFoundError(Exception):
 
 class RateLimitError(Exception):
     pass
+
+
+def parse_username(text):
+    """Accept a plain username or a GitHub link and return just the username.
+    "https://github.com/octocat/hello?tab=repos" -> "octocat", "@octocat" -> "octocat"."""
+    text = text.strip()
+    if "github.com/" in text.lower():
+        start = text.lower().index("github.com/") + len("github.com/")
+        text = text[start:]
+    # Keep only the first part of the path, before any "/", "?" or "#"
+    text = re.split(r"[/?#]", text)[0]
+    return text.lstrip("@").strip()
 
 
 def make_headers():

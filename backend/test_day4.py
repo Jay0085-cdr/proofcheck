@@ -9,6 +9,7 @@ Usage:
 
 import sys
 
+from github_checker import parse_username
 from pipeline import run_check
 from resume_parser import extract_text
 
@@ -18,7 +19,8 @@ def main():
         print('Usage: python test_day4.py resume.pdf|.docx github_username "Skill1, Skill2" [self]')
         sys.exit(1)
 
-    pdf_path, username, skills_text = sys.argv[1], sys.argv[2], sys.argv[3]
+    pdf_path, skills_text = sys.argv[1], sys.argv[3]
+    username = parse_username(sys.argv[2])  # also accepts a github.com link
     view = sys.argv[4] if len(sys.argv) == 5 else "recruiter"
     required = [s.strip() for s in skills_text.split(",") if s.strip()]
 

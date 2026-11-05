@@ -8,7 +8,7 @@ Usage:
 
 import sys
 
-from github_checker import check_user
+from github_checker import check_user, parse_username
 
 
 def yes_no(value):
@@ -20,7 +20,7 @@ def main():
         print("Usage: python test_day3.py github_username")
         sys.exit(1)
 
-    username = sys.argv[1]
+    username = parse_username(sys.argv[1])  # also accepts a github.com link
     print(f"Checking GitHub user '{username}'... (this can take a few seconds)\n")
 
     repos = check_user(username)

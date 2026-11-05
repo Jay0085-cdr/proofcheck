@@ -109,7 +109,7 @@ function App() {
           {view === 'self' ? 'Your GitHub username' : 'GitHub username'}
           <input
             type="text"
-            placeholder="e.g. octocat"
+            placeholder="e.g. octocat or https://github.com/octocat"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required

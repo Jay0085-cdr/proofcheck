@@ -11,7 +11,7 @@ import io
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from github_checker import RateLimitError, UserNotFoundError
+from github_checker import RateLimitError, UserNotFoundError, parse_username
 from pipeline import run_check
 from resume_parser import ResumeError, extract_text
 
@@ -44,7 +44,7 @@ def check(
     if not filename.lower().endswith((".pdf", ".docx")):
         raise HTTPException(status_code=400, detail="Please upload a PDF or DOCX resume.")
 
-    username = github_username.strip()
+    username = parse_username(github_username)  # also accepts a github.com link
     if not username:
         raise HTTPException(status_code=400, detail="Please enter a GitHub username.")
 
