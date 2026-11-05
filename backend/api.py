@@ -11,10 +11,8 @@ import io
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from claims import extract_claims
-from github_checker import RateLimitError, UserNotFoundError, check_user
-from matcher import check_project, job_fit
-from questions import make_questions
+from github_checker import RateLimitError, UserNotFoundError
+from pipeline import run_check
 from resume_parser import ResumeError, extract_text
 
 app = FastAPI(title="ProofCheck API")
@@ -56,8 +54,7 @@ def check(
     try:
         file_bytes = io.BytesIO(resume.file.read())
         text = extract_text(file_bytes, filename)
-        claims = extract_claims(text)
-        repos = check_user(username)
+        report = run_check(text, username, required)
     except ResumeError as error:
         raise HTTPException(status_code=400, detail=str(error))
     except UserNotFoundError as error:
@@ -68,16 +65,5 @@ def check(
         print(f"Unexpected error: {error!r}")  # shows in the backend terminal
         raise HTTPException(status_code=500, detail=f"Something went wrong: {error}")
 
-    results = [check_project(p, repos) for p in claims["projects"]]
-    fit = job_fit(claims["skills"], required)
-
     # ---- 3. Send everything back as JSON ----
-    return {
-        "mode": claims["mode"],
-        "username": username,
-        "skills": claims["skills"],
-        "job_fit": fit,
-        "projects": results,
-        "questions": make_questions(results, claims["mode"]),
-        "repo_count": len(repos),
-    }
+    return report

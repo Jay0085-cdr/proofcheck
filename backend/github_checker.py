@@ -129,17 +129,29 @@ SKIP_FOLDERS = {"node_modules", "venv", ".venv", "env", "site-packages",
 DEP_FILES = ("package.json", "requirements.txt", "pom.xml", "build.gradle", "build.gradle.kts")
 
 
+# Trees we already downloaded in this run: "owner/repo@branch" -> list of files.
+# The copy detector asks for the same trees again, so this saves API calls.
+TREE_CACHE = {}
+
+
+def get_tree(full_name, branch):
+    """Every file in the repo: a list of {"path", "type", "sha", "size"} dicts.
+    The Trees API gives the whole list in one call (recursive=1).
+    Empty repos return 409, so we get None and return an empty list."""
+    key = f"{full_name}@{branch}"
+    if key not in TREE_CACHE:
+        tree = get_json(
+            f"{API}/repos/{full_name}/git/trees/{branch}",
+            params={"recursive": 1},
+        ) or {}
+        TREE_CACHE[key] = tree.get("tree", [])
+    return TREE_CACHE[key]
+
+
 def get_deps(full_name, branch):
     """Find every dependency file (package.json, pom.xml, ...) in the repo and read them."""
-    # The Trees API lists every file path in the repo in one call.
-    # Empty repos return 409, so we get None and find no files.
-    tree = get_json(
-        f"{API}/repos/{full_name}/git/trees/{branch}",
-        params={"recursive": 1},
-    ) or {}
-
     dep_paths = []
-    for item in tree.get("tree", []):
+    for item in get_tree(full_name, branch):
         parts = item["path"].split("/")  # "frontend/package.json" -> ["frontend", "package.json"]
         if item["type"] != "blob" or parts[-1] not in DEP_FILES:
             continue
@@ -158,6 +170,19 @@ def get_deps(full_name, branch):
     }
 
 
+def get_parent(full_name):
+    """For a fork: the repo it was copied from, or None if we can't tell."""
+    details = get_json(f"{API}/repos/{full_name}") or {}
+    parent = details.get("parent")
+    if not parent:
+        return None
+    return {
+        "full_name": parent["full_name"],
+        "default_branch": parent["default_branch"],
+        "stars": parent["stargazers_count"],
+    }
+
+
 def check_user(username):
     """Return one dict of facts for each public repo of `username`."""
     # Make sure the user exists first
@@ -172,7 +197,10 @@ def check_user(username):
 
         info = {
             "name": repo["name"],
+            "full_name": full_name,
+            "default_branch": repo["default_branch"],
             "fork": repo["fork"],
+            "parent": get_parent(full_name) if repo["fork"] else None,
             "languages": [lang.lower() for lang in languages],
         }
         info.update(get_commit_facts(full_name, username))

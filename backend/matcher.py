@@ -113,6 +113,12 @@ def red_flags(repo):
         flags.append({"type": "other_authors",
                       "text": f"Most commits ({others} of {total}) were made by other accounts: {names}"})
 
+    copy = repo.get("copy")  # filled in by copy_detector.py (None = not a copy)
+    if copy:
+        flags.append({"type": "copied",
+                      "text": f"{copy['identical']} of {copy['total']} source files are identical "
+                              f"to {copy['source']} ({copy['stars']} stars)"})
+
     return flags
 
 
@@ -128,6 +134,7 @@ def check_project(project, repos):
             "tech": {},
             "flags": [],
             "other_authors": [],
+            "copy": None,
             "claims": project.get("claims", []),
         }
 
@@ -147,6 +154,7 @@ def check_project(project, repos):
         "tech": tech,
         "flags": flags,
         "other_authors": repo["other_authors"],
+        "copy": repo.get("copy"),
         "claims": project.get("claims", []),
     }
 

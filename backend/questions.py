@@ -50,6 +50,13 @@ def questions_for_project(r):
             "What was your part in this project?"
         )
 
+    copy = r.get("copy")
+    if copy:
+        questions.append(
+            f"Many files in {repo} are identical to {copy['source']}. "
+            "Which parts did you write or change yourself?"
+        )
+
     # One question for all missing tech, e.g. "Spring Boot, PostgreSQL and JWT"
     missing = [tech for tech, found in r["tech"].items() if not found]
     if missing:

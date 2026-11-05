@@ -8,10 +8,7 @@ Usage:
 
 import sys
 
-from claims import extract_claims
-from github_checker import check_user
-from matcher import check_project, job_fit
-from questions import make_questions
+from pipeline import run_check
 from resume_parser import extract_text
 
 
@@ -23,23 +20,19 @@ def main():
     pdf_path, username, skills_text = sys.argv[1], sys.argv[2], sys.argv[3]
     required = [s.strip() for s in skills_text.split(",") if s.strip()]
 
-    print("Reading resume...")
-    claims = extract_claims(extract_text(pdf_path))
-
-    print(f"Checking GitHub user '{username}'...")
-    repos = check_user(username)
-
-    results = [check_project(p, repos) for p in claims["projects"]]
-    fit = job_fit(claims["skills"], required)
+    print(f"Reading resume and checking GitHub user '{username}'...")
+    report = run_check(extract_text(pdf_path), username, required)
+    results = report["projects"]
+    fit = report["job_fit"]
 
     # ---------- Report ----------
     print("\n" + "=" * 60)
     print(f"PROOFCHECK REPORT: {username}")
     print("=" * 60)
-    print("Mode: " + ("AI" if claims["mode"] == "ai" else "Basic (no AI)"))
+    print("Mode: " + ("AI" if report["mode"] == "ai" else "Basic (no AI)"))
 
     print("\nSKILLS CLAIMED:")
-    print("  " + (", ".join(claims["skills"]) or "(none found)"))
+    print("  " + (", ".join(report["skills"]) or "(none found)"))
 
     print(f"\nJOB FIT: {fit['score']}% of required skills found in resume")
     print("  Matched: " + (", ".join(fit["matched"]) or "-"))
@@ -57,10 +50,10 @@ def main():
             print(f"    claim: {claim}")
 
     print("\nINTERVIEW QUESTIONS:")
-    for i, q in enumerate(make_questions(results, claims["mode"]), start=1):
+    for i, q in enumerate(report["questions"], start=1):
         print(f"  {i}. {q}")
 
-    print(f"\nGitHub has {len(repos)} public repos in total.")
+    print(f"\nGitHub has {report['repo_count']} public repos in total.")
     print("Note: ProofCheck never rejects anyone. It only shows evidence.")
 
 
