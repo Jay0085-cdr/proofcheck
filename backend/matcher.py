@@ -134,6 +134,7 @@ def check_project(project, repos):
             "tech": {},
             "flags": [],
             "other_authors": [],
+            "unlinked_authors": [],
             "copy": None,
             "claims": project.get("claims", []),
         }
@@ -154,6 +155,7 @@ def check_project(project, repos):
         "tech": tech,
         "flags": flags,
         "other_authors": repo["other_authors"],
+        "unlinked_authors": repo["unlinked_authors"],
         "copy": repo.get("copy"),
         "claims": project.get("claims", []),
     }

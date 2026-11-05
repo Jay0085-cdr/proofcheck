@@ -16,6 +16,8 @@ function App() {
   const [file, setFile] = useState(null)
   const [username, setUsername] = useState('')
   const [skills, setSkills] = useState('')
+  // "recruiter" = interview questions, "self" = fix-it list for the candidate
+  const [view, setView] = useState('recruiter')
 
   // What the page is showing
   const [loading, setLoading] = useState(false)
@@ -39,6 +41,7 @@ function App() {
     formData.append('resume', file)
     formData.append('github_username', username)
     formData.append('required_skills', skills)
+    formData.append('view', view)
 
     setLoading(true)
     setError('')
@@ -75,6 +78,23 @@ function App() {
         </p>
       </header>
 
+      <div className="view-switch">
+        <button
+          type="button"
+          className={view === 'recruiter' ? 'active' : ''}
+          onClick={() => setView('recruiter')}
+        >
+          Recruiter
+        </button>
+        <button
+          type="button"
+          className={view === 'self' ? 'active' : ''}
+          onClick={() => setView('self')}
+        >
+          Check myself
+        </button>
+      </div>
+
       <form className="card form" onSubmit={handleSubmit}>
         <label>
           Resume (PDF or DOCX)
@@ -86,7 +106,7 @@ function App() {
         </label>
 
         <label>
-          GitHub username
+          {view === 'self' ? 'Your GitHub username' : 'GitHub username'}
           <input
             type="text"
             placeholder="e.g. octocat"
@@ -148,10 +168,21 @@ function Report({ result }) {
       {result.projects.length === 0 && <p className="muted">No projects found in the resume.</p>}
       {result.projects.map((p) => <ProjectCard key={p.project} project={p} />)}
 
-      <h2 className="section-title">Interview questions</h2>
-      <ol className="card questions">
-        {result.questions.map((q) => <li key={q}>{q}</li>)}
-      </ol>
+      {result.view === 'self' ? (
+        <>
+          <h2 className="section-title">Fix-it list</h2>
+          <ol className="card questions">
+            {result.fixes.map((tip) => <li key={tip}>{tip}</li>)}
+          </ol>
+        </>
+      ) : (
+        <>
+          <h2 className="section-title">Interview questions</h2>
+          <ol className="card questions">
+            {result.questions.map((q) => <li key={q}>{q}</li>)}
+          </ol>
+        </>
+      )}
     </section>
   )
 }

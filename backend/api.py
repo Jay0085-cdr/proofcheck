@@ -37,6 +37,7 @@ def check(
     resume: UploadFile = File(...),
     github_username: str = Form(...),
     required_skills: str = Form(""),
+    view: str = Form("recruiter"),  # "recruiter" or "self" ("Check myself")
 ):
     # ---- 1. Check the inputs ----
     filename = resume.filename or ""
@@ -47,6 +48,9 @@ def check(
     if not username:
         raise HTTPException(status_code=400, detail="Please enter a GitHub username.")
 
+    if view not in ("recruiter", "self"):
+        raise HTTPException(status_code=400, detail='view must be "recruiter" or "self".')
+
     # "Python, React" -> ["Python", "React"]
     required = [s.strip() for s in required_skills.split(",") if s.strip()]
 
@@ -54,7 +58,7 @@ def check(
     try:
         file_bytes = io.BytesIO(resume.file.read())
         text = extract_text(file_bytes, filename)
-        report = run_check(text, username, required)
+        report = run_check(text, username, required, view)
     except ResumeError as error:
         raise HTTPException(status_code=400, detail=str(error))
     except UserNotFoundError as error:

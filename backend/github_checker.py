@@ -101,13 +101,18 @@ def get_commit_facts(full_name, username):
     ) or []
 
     other_authors = []
+    unlinked = []  # name + email of commits that aren't linked to any GitHub account
     for c in all_commits:
         # "author" is the GitHub account; it's None if the commit email isn't
         # linked to any account, so fall back to the name saved in git
         if c["author"]:
             who = c["author"]["login"]
         else:
-            who = c["commit"]["author"]["name"] + " (no GitHub account)"
+            git_author = c["commit"]["author"]
+            who = git_author["name"] + " (no GitHub account)"
+            person = {"name": git_author["name"], "email": git_author["email"]}
+            if person not in unlinked:
+                unlinked.append(person)
         if who.lower() != username.lower() and who not in other_authors:
             other_authors.append(who)
 
@@ -118,6 +123,7 @@ def get_commit_facts(full_name, username):
         "last_commit": max(dates) if dates else None,
         "total_commits": len(all_commits),
         "other_authors": other_authors,
+        "unlinked_authors": unlinked,
     }
 
 

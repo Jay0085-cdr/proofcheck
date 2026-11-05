@@ -7,13 +7,15 @@ and test_day4.py (the terminal report), so both always do the same thing.
 import copy_detector
 import github_checker
 from claims import extract_claims
+from fixes import make_fixes
 from github_checker import check_user
 from matcher import check_project, find_repo, job_fit
 from questions import make_questions
 
 
-def run_check(resume_text, username, required_skills):
-    """Resume text + GitHub username -> the full report as a dict."""
+def run_check(resume_text, username, required_skills, view="recruiter"):
+    """Resume text + GitHub username -> the full report as a dict.
+    view="recruiter" adds interview questions; view="self" adds a fix-it list."""
     # Start each check fresh: empty tree cache and search counter
     github_checker.TREE_CACHE.clear()
     copy_detector.search_count = 0
@@ -29,12 +31,17 @@ def run_check(resume_text, username, required_skills):
             repo["copy"] = copy_detector.find_copy(repo, project, username)
         results.append(check_project(project, repos))
 
-    return {
+    report = {
         "mode": claims["mode"],
+        "view": view,
         "username": username,
         "skills": claims["skills"],
         "job_fit": job_fit(claims["skills"], required_skills),
         "projects": results,
-        "questions": make_questions(results, claims["mode"]),
         "repo_count": len(repos),
     }
+    if view == "self":
+        report["fixes"] = make_fixes(results, resume_text, claims["mode"])
+    else:
+        report["questions"] = make_questions(results, claims["mode"])
+    return report
