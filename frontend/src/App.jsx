@@ -212,10 +212,52 @@ function ProjectCard({ project }) {
         </ul>
       )}
 
+      {project.repo && (
+        <div className="timeline">
+          {project.timeline.length > 0 && <CommitChart weeks={project.timeline} />}
+          <p className="muted">{project.timeline_label}</p>
+        </div>
+      )}
+
       {project.flags.map((flag) => (
         <p key={flag.text} className="flag">⚠ {flag.text}</p>
       ))}
     </article>
+  )
+}
+
+// Small bar chart: one bar per week, taller bar = more commits that week
+function CommitChart({ weeks }) {
+  const width = 300
+  const height = 60
+  const most = Math.max(...weeks.map((w) => w.commits))
+  const slot = width / weeks.length // horizontal space for each week
+  const gap = slot > 4 ? 1 : 0 // no gap when bars are very thin
+
+  return (
+    <svg
+      className="chart"
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      role="img"
+      aria-label="Commits per week"
+    >
+      {weeks.map((w, i) => {
+        // Weeks with commits get at least 2px so a single commit is still visible
+        const barHeight = w.commits === 0 ? 0 : Math.max(2, (w.commits / most) * height)
+        return (
+          <rect
+            key={w.week}
+            x={i * slot + gap / 2}
+            y={height - barHeight}
+            width={Math.max(slot - gap, 0.5)}
+            height={barHeight}
+          >
+            <title>{`Week of ${w.week}: ${w.commits} commit${w.commits === 1 ? '' : 's'}`}</title>
+          </rect>
+        )
+      })}
+    </svg>
   )
 }
 

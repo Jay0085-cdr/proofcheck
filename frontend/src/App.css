@@ -219,6 +219,23 @@
 .tech .yes { color: var(--green); }
 .tech .no  { color: var(--red); }
 
+.timeline {
+  margin: 12px 0 4px;
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  max-width: 360px;
+  height: 48px;
+  background: var(--grey-bg);
+  border-radius: 6px;
+}
+
+.chart rect {
+  fill: var(--accent);
+}
+
 .flag {
   margin: 6px 0 0;
   padding: 8px 12px;

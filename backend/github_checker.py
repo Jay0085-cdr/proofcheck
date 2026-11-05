@@ -124,6 +124,7 @@ def get_commit_facts(full_name, username):
         "total_commits": len(all_commits),
         "other_authors": other_authors,
         "unlinked_authors": unlinked,
+        "commit_dates": dates,
     }
 
 

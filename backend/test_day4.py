@@ -46,6 +46,9 @@ def main():
         print(f"    GitHub repo: {r['repo'] or 'no matching repo found'}")
         for tech, found in r["tech"].items():
             print(f"    {'yes' if found else 'NO ':<4} {tech}")
+        if r["repo"]:
+            bars = " ".join(str(w["commits"]) for w in r["timeline"])
+            print(f"    timeline: {r['timeline_label']}" + (f"  [{bars}]" if bars else ""))
         for flag in r["flags"]:
             print(f"    ! {flag['text']}")
         for claim in r["claims"]:

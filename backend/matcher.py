@@ -7,6 +7,8 @@ Plain if/else rules only, no AI, so every verdict can be explained.
 import difflib
 import re
 
+from timeline import timeline_label, weekly_counts
+
 # A resume says "Node.js" but package.json says "express".
 # These are the words that count as evidence for each tech.
 ALIASES = {
@@ -136,10 +138,13 @@ def check_project(project, repos):
             "other_authors": [],
             "unlinked_authors": [],
             "copy": None,
+            "timeline": [],
+            "timeline_label": "",
             "claims": project.get("claims", []),
         }
 
     tech = {t: tech_found(t, repo) for t in project.get("tech", [])}
+    weeks = weekly_counts(repo["commit_dates"])
     flags = red_flags(repo)
 
     # Verified only if every claimed tech was found AND there are no red flags
@@ -157,6 +162,8 @@ def check_project(project, repos):
         "other_authors": repo["other_authors"],
         "unlinked_authors": repo["unlinked_authors"],
         "copy": repo.get("copy"),
+        "timeline": weeks,
+        "timeline_label": timeline_label(weeks, repo["active_days"]),
         "claims": project.get("claims", []),
     }
 
