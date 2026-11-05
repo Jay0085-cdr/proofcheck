@@ -20,6 +20,7 @@ ALIASES = {
     "django": ["django"],
     "fastapi": ["fastapi"],
     "spring boot": ["spring"],
+    "jwt": ["jwt", "jjwt", "jsonwebtoken"],
     "docker": ["docker", "dockerfile"],  # GitHub lists Dockerfiles as a "language"
     "postgresql": ["postgresql", "postgres", "pg", "plpgsql"],
     "mysql": ["mysql", "mysql2"],

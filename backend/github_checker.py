@@ -125,11 +125,12 @@ def get_commit_facts(full_name, username):
 SKIP_FOLDERS = {"node_modules", "venv", ".venv", "env", "site-packages",
                 "vendor", "dist", "build", "__pycache__", ".next"}
 
-DEP_FILES = ("package.json", "requirements.txt")
+# Java projects list their libraries in pom.xml (Maven) or build.gradle (Gradle)
+DEP_FILES = ("package.json", "requirements.txt", "pom.xml", "build.gradle", "build.gradle.kts")
 
 
 def get_deps(full_name, branch):
-    """Find every package.json / requirements.txt in the repo and read them."""
+    """Find every dependency file (package.json, pom.xml, ...) in the repo and read them."""
     # The Trees API lists every file path in the repo in one call.
     # Empty repos return 409, so we get None and find no files.
     tree = get_json(
