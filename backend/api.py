@@ -7,6 +7,7 @@ Run it from the backend/ folder with:
 """
 
 import io
+import os
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,11 +18,15 @@ from resume_parser import ResumeError, extract_text
 
 app = FastAPI(title="ProofCheck API")
 
-# Allow the React dev server (a different port = a different "origin")
-# to call this API from the browser
+# Allow the React site (a different address = a different "origin") to call
+# this API from the browser: the local dev server, plus the deployed site(s)
+# listed in FRONTEND_URL, e.g. "https://proofcheck.vercel.app"
+origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+origins += [url.strip().rstrip("/") for url in os.getenv("FRONTEND_URL", "").split(",") if url.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
